@@ -1,0 +1,15 @@
+doctype html
+html
+    head
+        title= 'Directory listing for ' + path
+    body
+        h2= 'Directory listing for ' + path
+        hr
+        table
+            each file in files
+                tr
+                    td [
+                    td: a(href='/download' + path + file) Download
+                    td ]
+                    td: a(href='/browse' + path + file)= file
+        hr
