@@ -11,6 +11,19 @@ app.set('views', __dirname + '/views');
 app.engine('.jade', jade.renderFile);
 app.set('view engine', 'jade');
 
+app.all('*', function (request, response, next) {
+    var pathname = request.url;
+    var components = pathname.split('/');
+    var valid = true;
+    for (i in components) {
+        if (components[i] === ".." || components[i] === ".") {
+            valid = false;
+            error404(response);
+        }
+    }
+    if (valid) next();
+});
+
 app.get('/', function (request, response) {
     response.redirect('/browse/');
 });
