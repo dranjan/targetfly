@@ -1,7 +1,16 @@
 var express = require('express');
 var fs = require('fs');
 var spawn = require('child_process').spawn;
-var jade = require('jade')
+var jade = require('jade');
+var program = require('commander');
+
+program.version('0.0.1');
+program.option('-p, --port [N]', 'port to listen on [8080]', 8080);
+program.option('-d, --directory [PATH]', 'directory to serve [.]', '.');
+program.parse(process.argv);
+
+var port = program.port;
+var root = program.directory;
 
 var app = express();
 
@@ -29,7 +38,7 @@ app.get('/', function (request, response) {
 });
 
 app.get(/^\/browse\/(.*)/, function (request, response) {
-    var pathname = "./" + request.params[0];
+    var pathname = root + "/" + request.params[0];
     fs.stat(pathname, function (err, stats) {
         if (err) {
             error404(response);
@@ -57,7 +66,7 @@ app.get(/^\/browse\/(.*)/, function (request, response) {
 });
 
 app.get(/^\/download\/(.*)/, function(request, response) {
-    var pathname = "./" + request.params[0];
+    var pathname = root + "/" + request.params[0];
     fs.stat(pathname, function (err, stats) {
         if (err) {
             error404(response);
@@ -73,6 +82,10 @@ app.get(/^\/download\/(.*)/, function(request, response) {
                               });
         }
     });
+});
+
+app.use(function (request, response) {
+    error404(response);
 });
 
 function genericError(response, errorcode, err) {
@@ -111,4 +124,5 @@ function dirname(path) {
     return components.length? components.join('/') : '.';
 }
 
-app.listen(8080);
+app.listen(port);
+console.log("Serving " + root + " on port " + String(port) + "...");
