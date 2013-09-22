@@ -3,6 +3,9 @@ var fs = require('fs');
 var spawn = require('child_process').spawn;
 var jade = require('jade');
 var program = require('commander');
+var inspect = require('util').inspect;
+var path = require('path');
+var http = require('http');
 
 program.version('0.0.1');
 program.option('-p, --port [N]', 'port to listen on [8080]', 8080);
@@ -21,10 +24,12 @@ app.engine('.jade', jade.renderFile);
 app.set('view engine', 'jade');
 
 app.all('*', function (request, response, next) {
-    var pathname = request.url;
+    var pathname = request.path;
     var components = pathname.split('/');
     var valid = true;
-    for (i in components) {
+
+    /* Don't allow upward traversal in the request */
+    for (var i in components) {
         if (components[i] === ".." || components[i] === ".") {
             valid = false;
             error404(response);
@@ -38,27 +43,29 @@ app.get('/', function (request, response) {
 });
 
 app.get(/^\/browse\/(.*)/, function (request, response) {
-    var pathname = root + "/" + request.params[0];
+    var pathname = path.resolve(root, request.params[0]);
     fs.stat(pathname, function (err, stats) {
         if (err) {
             error404(response);
         } else if (stats.isDirectory()) {
-            var path = '/' + request.params[0];
-            if (path[path.length-1] !== '/') path = path + '/';
+            var dirpath = '/' + request.params[0];
+            if (dirpath[dirpath.length-1] !== '/') {
+                dirpath = dirpath + '/';
+            }
 
             fs.readdir(pathname, function (err, files) {
                 if (err) {
-                    genericError(response, 500, err);
+                    genericError(response, err);
                 } else {
                     response.render('directory', 
-                                    {files: files, path: path});
+                                    {files: files, path: dirpath});
                 }
             });
         } else {
             /* The error handling here doesn't really work. */
             response.sendfile(pathname, {}, function (err) {
                 if (err) {
-                    genericError(response, 500, err);
+                    genericError(response, err);
                 }
             });
         }
@@ -66,7 +73,7 @@ app.get(/^\/browse\/(.*)/, function (request, response) {
 });
 
 app.get(/^\/download\/(.*)/, function(request, response) {
-    var pathname = root + "/" + request.params[0];
+    var pathname = path.resolve(root, request.params[0]);
     fs.stat(pathname, function (err, stats) {
         if (err) {
             error404(response);
@@ -74,10 +81,10 @@ app.get(/^\/download\/(.*)/, function(request, response) {
             downloadTar(pathname, response);
         } else {
             /* The error handling here doesn't really work. */
-            response.download(pathname, basename(pathname),
+            response.download(pathname, path.basename(pathname),
                               function (err) {
                                   if (err) {
-                                      genericError(response, 500, err);
+                                      genericError(response, err);
                                   }
                               });
         }
@@ -88,9 +95,12 @@ app.use(function (request, response) {
     error404(response);
 });
 
-function genericError(response, errorcode, err) {
-    err.code = errorcode;
-    response.status(errorcode).render('error', err);
+function genericError(response, err) {
+    var errStr = inspect(err);
+    console.log(errStr);
+    var s = err.status || 500;
+    if (s === 404) error404(response);
+    else response.status(s).render('error', {code:s, message:errStr});
 }
 
 function error404(response) {
@@ -113,15 +123,10 @@ function downloadTar(path, response) {
     child.stdout.pipe(response);
 }
 
-function basename(path) {
-    var components = path.split('/');
-    return components[components.length - 1];
-}
-
-function dirname(path) {
-    var components = path.split('/');
-    components.pop();
-    return components.length? components.join('/') : '.';
+function httpError(code) {
+    var err = new Error(http.STATUS_CODES[code]);
+    err.status = code;
+    return code;
 }
 
 app.listen(port);
