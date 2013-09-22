@@ -7,6 +7,7 @@ var inspect = require('util').inspect;
 var path = require('path');
 var http = require('http');
 var async = require('async');
+var mime = require('mime');
 
 var pkg = JSON.parse(fs.readFileSync(path.join(__dirname,
                                                "package.json")));
@@ -14,11 +15,16 @@ var version = pkg.version;
 
 program.version(version);
 program.option('-p, --port [N]', 'port to listen on [8080]', 8080);
-program.option('-d, --directory [PATH]', 'directory to serve [.]', '.');
+program.option('-d, --directory [PATH]',
+               'directory to serve [.]', '.');
+program.option('--show-hidden',
+               'serve hidden files (affects TAR downloads as well)');
+
 program.parse(process.argv);
 
 var port = program.port;
 var root = program.directory;
+var show_hidden = program.showHidden;
 
 var app = express();
 
@@ -35,6 +41,16 @@ app.set('views', __dirname + '/views');
 app.engine('.jade', jade.renderFile);
 app.set('view engine', 'jade');
 
+if (show_hidden) {
+    var exclude_component = function (f) {
+        return f === '.' || f === '..';
+    }
+} else {
+    var exclude_component = function (f) {
+        return f[0] === '.';
+    }
+}
+
 /* This middleware will refuse to serve any paths with a component
  * beginning with '.', which prohibits hidden files (and by implication,
  * upward directory traversal).
@@ -45,7 +61,7 @@ app.all('*', function (request, response, next) {
     var valid = true;
 
     for (var i in components) {
-        if (components[i][0] === ".") {
+        if (exclude_component(components[i])) {
             valid = false;
             error404(response);
         }
@@ -78,10 +94,7 @@ app.get(/^\/browse\/(.*)/, function (request, response) {
                 }
             });
         } else {
-            /* The error handling here doesn't really work. */
-            response.sendfile(pathname, {}, function (err) {
-                if (err) genericError(response, err);
-            });
+            sendFile(pathname, response);
         }
     });
 });
@@ -92,13 +105,9 @@ app.get(/^\/download\/(.*)/, function(request, response) {
         if (err) {
             error404(response);
         } else if (stats.isDirectory()) {
-            downloadTar(pathname, response);
+            sendTar(pathname, response);
         } else {
-            /* The error handling here doesn't really work. */
-            response.download(pathname, path.basename(pathname),
-                              function (err) {
-                                  if (err) genericError(response, err);
-                              });
+            sendFile(pathname, response, true);
         }
     });
 });
@@ -156,7 +165,7 @@ function dirInfo(dirpath, callback) {
             callback(err);
         } else {
             async.filter(files, function (item, fn) {
-                fn(path.basename(item)[0] !== '.');
+                fn(!exclude_component(item));
             },
             function (files) {
                 async.map(files, fileInfo, callback);
@@ -193,15 +202,38 @@ function fileReadable(filename, callback) {
     });
 }
 
-function downloadTar(dirpath, response) {
+function sendFile(filepath, response, attach) {
+    var filename = path.basename(filepath);
+
+    var file = fs.createReadStream(filepath);
+
+    response.status(200);
+    response.type(mime.lookup(filepath));
+
+    if (attach) {
+        response.set({
+            "Content-Disposition": "attachment; filename=" + filename
+        });
+    }
+
+    file.pipe(response);
+}
+
+function sendTar(dirpath, response) {
     var cd = path.dirname(dirpath);
     var filename = path.basename(dirpath);
     var tarname = filename + ".tar";
 
-    var child = spawn("tar", ["-c",
-                              "--exclude", '.*',
-                              "-C", cd,
-                              filename]);
+    var tar_opts = ["-c", "-C", cd];
+
+    if (!show_hidden) {
+        tar_opts.push('--exclude');
+        tar_opts.push('.*');
+    }
+
+    tar_opts.push(filename);
+
+    var child = spawn("tar", tar_opts);
 
     response.status(200);
     response.set({

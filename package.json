@@ -1,6 +1,6 @@
 {
     "name": "targetfly",
-    "version": "0.0.3",
+    "version": "0.1.0",
     "author": "Darsh P. Ranjan",
     "contributors": [
         {
@@ -10,9 +10,10 @@
     "description": "a very simple web server that tars directories on the fly",
     "dependencies": {
         "express"  : "3.x",
-        "jade"     : "0.x",
+        "jade"     : "*",
         "commander": "2.x",
-        "async"    : "*"
+        "async"    : "*",
+        "mime"     : ">=1.0.0"
     },
     "license": "GPL",
     "engines": {
