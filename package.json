@@ -1,6 +1,6 @@
 {
     "name": "targetfly",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "author": "Darsh P. Ranjan",
     "contributors": [
         {
@@ -11,10 +11,12 @@
     "dependencies": {
         "express"  : "3.x",
         "jade"     : "0.x",
-        "commander": "2.x"
+        "commander": "2.x",
+        "async"    : "*"
     },
     "license": "GPL",
     "engines": {
         "node": ">=0.10"
-    }
+    },
+    "os": ["!win32"]
 }

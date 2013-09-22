@@ -6,8 +6,11 @@ var program = require('commander');
 var inspect = require('util').inspect;
 var path = require('path');
 var http = require('http');
+var async = require('async');
 
-program.version('0.0.1');
+var version = '0.0.2';
+
+program.version(version);
 program.option('-p, --port [N]', 'port to listen on [8080]', 8080);
 program.option('-d, --directory [PATH]', 'directory to serve [.]', '.');
 program.parse(process.argv);
@@ -17,24 +20,35 @@ var root = program.directory;
 
 var app = express();
 
+app.locals({
+    version: version,
+    platform: process.platform,
+    arch: process.arch,
+    node_version: process.version
+})
+
 app.use(express.logger('dev'));
 
 app.set('views', __dirname + '/views');
 app.engine('.jade', jade.renderFile);
 app.set('view engine', 'jade');
 
+/* This middleware will refuse to serve any paths with a component
+ * beginning with '.', which prohibits hidden files (and by implication,
+ * upward directory traversal).
+ */
 app.all('*', function (request, response, next) {
     var pathname = request.path;
     var components = pathname.split('/');
     var valid = true;
 
-    /* Don't allow upward traversal in the request */
     for (var i in components) {
-        if (components[i] === ".." || components[i] === ".") {
+        if (components[i][0] === ".") {
             valid = false;
             error404(response);
         }
     }
+
     if (valid) next();
 });
 
@@ -53,7 +67,7 @@ app.get(/^\/browse\/(.*)/, function (request, response) {
                 dirpath = dirpath + '/';
             }
 
-            fs.readdir(pathname, function (err, files) {
+            dirInfo(pathname, function (err, files) {
                 if (err) {
                     genericError(response, err);
                 } else {
@@ -64,9 +78,7 @@ app.get(/^\/browse\/(.*)/, function (request, response) {
         } else {
             /* The error handling here doesn't really work. */
             response.sendfile(pathname, {}, function (err) {
-                if (err) {
-                    genericError(response, err);
-                }
+                if (err) genericError(response, err);
             });
         }
     });
@@ -83,9 +95,7 @@ app.get(/^\/download\/(.*)/, function(request, response) {
             /* The error handling here doesn't really work. */
             response.download(pathname, path.basename(pathname),
                               function (err) {
-                                  if (err) {
-                                      genericError(response, err);
-                                  }
+                                  if (err) genericError(response, err);
                               });
         }
     });
@@ -107,9 +117,83 @@ function error404(response) {
     response.status(404).render('404');
 }
 
-function downloadTar(path, response) {
-    var cd = dirname(path);
-    var filename = basename(path);
+/* callback is callback(err, files), where files is an array whose
+ * entries are {name:filename, stat:{isdir:<boolean>}}.  The 'stat'
+ * field can be null (if stat-ing the file failed).  The array contains
+ * an entry for each non-hidden file in the top level of the given
+ * directory.
+ */
+function dirInfo(dirpath, callback) {
+    function fileInfo(filename, callback) {
+        var tasks = {};
+        var filepath = path.join(dirpath, filename);
+
+        tasks.name = function (callback) {
+            callback(null, filename);
+        };
+
+        tasks.stat = function (callback) {
+            isDir(filepath, function (err, v) {
+                if (err) {
+                    callback(null, null);
+                } else {
+                    callback(null, {isdir: v});
+                }
+            });
+        };
+
+        tasks.readable = function (callback) {
+            fileReadable(filepath, callback);
+        };
+
+        async.parallel(tasks, callback);
+    }
+
+    fs.readdir(dirpath, function (err, files) {
+        if (err) {
+            callback(err);
+        } else {
+            async.filter(files, function (item, fn) {
+                fn(path.basename(item)[0] !== '.');
+            },
+            function (files) {
+                async.map(files, fileInfo, callback);
+            });
+        }
+    });
+}
+
+/* callback is callback(err, <boolean>).  It will be called once with
+ * the <boolean> representing whether the filename is a directory or
+ * not.  err will be the error from fs.stat (if any).
+ */
+function isDir(filename, callback) {
+    fs.stat(filename, function (err, stats) {
+        if (err) {
+            callback(err);
+        }
+        else {
+            callback(null, stats.isDirectory());
+        }
+    });
+}
+
+function fileReadable(filename, callback) {
+    fs.open(filename, "r", function (err, fd) {
+        if (err) {
+            callback(null, false);
+        } else {
+            fs.close(fd, function (err) {
+                if (err) callback(err);
+                else callback(null, true);
+            });
+        }
+    });
+}
+
+function downloadTar(dirpath, response) {
+    var cd = path.dirname(dirpath);
+    var filename = path.basename(dirpath);
     var tarname = filename + ".tar";
 
     var child = spawn("tar", ["-c", "-C", cd, filename]);
