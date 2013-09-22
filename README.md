@@ -7,6 +7,9 @@ whole directories as TAR files that are generated on the fly.
 ## Installation
 
 Install node.js and npm, then run `npm install` in the repository root.
+You will also need some version of the `tar` command.  Both GNU tar and
+BSD tar are believed to work, but targetfly may break with extremely old
+versions of either.
 
 ## Usage
 

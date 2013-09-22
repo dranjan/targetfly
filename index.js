@@ -8,7 +8,9 @@ var path = require('path');
 var http = require('http');
 var async = require('async');
 
-var version = '0.0.2';
+var pkg = JSON.parse(fs.readFileSync(path.join(__dirname,
+                                               "package.json")));
+var version = pkg.version;
 
 program.version(version);
 program.option('-p, --port [N]', 'port to listen on [8080]', 8080);
@@ -196,7 +198,10 @@ function downloadTar(dirpath, response) {
     var filename = path.basename(dirpath);
     var tarname = filename + ".tar";
 
-    var child = spawn("tar", ["-c", "-C", cd, filename]);
+    var child = spawn("tar", ["-c",
+                              "--exclude", '.*',
+                              "-C", cd,
+                              filename]);
 
     response.status(200);
     response.set({
