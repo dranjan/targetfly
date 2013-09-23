@@ -19,12 +19,14 @@ program.option('-d, --directory [PATH]',
                'directory to serve [.]', '.');
 program.option('--show-hidden',
                'serve hidden files (affects TAR downloads as well)');
+program.option('--tar [PROGRAM]', 'choose \'tar\' binary', 'tar');
 
 program.parse(process.argv);
 
 var port = program.port;
 var root = program.directory;
 var show_hidden = program.showHidden;
+var tar = program.tar;
 
 var app = express();
 
@@ -116,18 +118,6 @@ app.use(function (request, response) {
     error404(response);
 });
 
-function genericError(response, err) {
-    var errStr = inspect(err);
-    console.log(errStr);
-    var s = err.status || 500;
-    if (s === 404) error404(response);
-    else response.status(s).render('error', {code:s, message:errStr});
-}
-
-function error404(response) {
-    response.status(404).render('404');
-}
-
 /* callback is callback(err, files), where files is an array whose
  * entries are {name:filename, stat:{isdir:<boolean>}}.  The 'stat'
  * field can be null (if stat-ing the file failed).  The array contains
@@ -205,7 +195,11 @@ function fileReadable(filename, callback) {
 function sendFile(filepath, response, attach) {
     var filename = path.basename(filepath);
 
-    var file = fs.createReadStream(filepath);
+    try {
+        var file = fs.createReadStream(filepath);
+    } catch (err) {
+        error404(response);
+    }
 
     response.status(200);
     response.type(mime.lookup(filepath));
@@ -215,6 +209,14 @@ function sendFile(filepath, response, attach) {
             "Content-Disposition": "attachment; filename=" + filename
         });
     }
+
+    file.on('error', function (err) {
+        if (!response.headerSent) {
+            response.removeHeader("Content-Type");
+            response.removeHeader("Content-Disposition");
+            genericError(response, httpError(500));
+        }
+    });
 
     file.pipe(response);
 }
@@ -233,7 +235,11 @@ function sendTar(dirpath, response) {
 
     tar_opts.push(filename);
 
-    var child = spawn("tar", tar_opts);
+    try {
+        var child = spawn(tar, tar_opts);
+    } catch (err) {
+        genericError(response, httpError(500));
+    }
 
     response.status(200);
     response.set({
@@ -241,7 +247,32 @@ function sendTar(dirpath, response) {
         "Content-Disposition": "attachment; filename=" + tarname
     });
 
+    function error(err) {
+        if (!response.headerSent) {
+            response.removeHeader("Content-Type");
+            response.removeHeader("Content-Disposition");
+            genericError(response, httpError(500));
+        }
+    }
+
+    child.on('error', error);
+
+    /* not sure if this is needed */
+    child.stdout.on('error', error);
+
     child.stdout.pipe(response);
+}
+
+function genericError(response, err) {
+    var errStr = inspect(err);
+    console.log(errStr);
+    var s = err.status || 500;
+    if (s === 404) error404(response);
+    else response.status(s).render('error', {code:s, message:errStr});
+}
+
+function error404(response) {
+    response.status(404).render('404');
 }
 
 function httpError(code) {
