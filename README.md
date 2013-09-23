@@ -1,4 +1,4 @@
-# Targetfly`
+# Targetfly
 
 This is a very simple Node.js web application mainly intended as a
 download server.  The only interesting feature is that it can serve
