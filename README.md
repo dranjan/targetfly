@@ -1,4 +1,4 @@
-# Targetfly
+# Targetfly`
 
 This is a very simple Node.js web application mainly intended as a
 download server.  The only interesting feature is that it can serve
@@ -20,6 +20,11 @@ The simplest usage is
 which will serve files from the current working directory on port 8080.
 The most complicated usage is
 
-    node path/to/targetfly/index.js --port [PORT] --directory [DIRECTORY]
+    node path/to/targetfly/index.js --port [PORT] \
+                                    --directory [DIRECTORY] \
+                                    --tar [PROGRAM] \
+                                  [ --show-hidden ]
 
-which chooses an arbitrary port and root directory.
+which chooses an arbitrary port, root directory, and tar binary.  The
+last shown option, `--show-hidden`, will allow the server to serve files
+whose names begin with '.', which is disabled by default.
