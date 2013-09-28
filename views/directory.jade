@@ -2,29 +2,30 @@ doctype html
 html
     head
         title= 'Directory listing for ' + path
+        link(rel="stylesheet", type="text/css",
+             href="/meta/directory.css")
     body
-        h2= 'Directory listing for ' + path
+        h2(class="header")
+            = 'Directory listing for ' + path
         hr
-        table
+        table(class="listing")
             each file in files
                 if file.readable && file.stat
                     tr
-                        td [
+                        td(class="delimiter") [
                         td
-                            a(href='/download' + path + file.name)
-                                if file.stat.isdir
-                                    = 'Download TAR'
-                                else
-                                    = 'Download'
-                        td ]
+                            a(href='/download' + path + file.name,
+                              class="download-link",
+                              ft=(file.stat.isdir? "dir":"normal"))
+                                = 'Download'
+                        td(class="delimiter") ]
                         td
-                            a(href='/browse' + path + file.name)
-                                if file.stat.isdir
-                                    = file.name + '/'
-                                else
-                                    = file.name
+                            a(href='/browse' + path + file.name,
+                              class="browse-link",
+                              ft=(file.stat.isdir? "dir":"normal"))
+                                = file.name
         hr
-        i
+        p(class="footer")
             = 'targetfly server v' + version
             = ', running on node.js '
             = node_version + '/' + platform + '/' + arch

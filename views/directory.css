@@ -1,0 +1,49 @@
+.listing {
+    font-family: monospace;
+}
+
+body {
+    background-color: #181818;
+    color: #d8d8d8;
+}
+
+.browse-link {
+    color: #fb3;
+    text-decoration: none;
+}
+
+[ft="dir"].browse-link:after {
+    color: #bf3;
+    content: "/";
+}
+
+.delimiter {
+    color: #73f;
+}
+
+.download-link {
+    color: #f37;
+    text-decoration: none;
+}
+
+[ft="dir"].download-link:after {
+    content: " TAR";
+}
+
+.header {
+    font-family: monospace;
+    font-weight: normal;
+    font-size: 100%;
+    color: #d8d8d8;
+}
+
+.footer {
+    font-family: monospace;
+    font-style: normal;
+    font-size: 100%;
+    color: #666;
+}
+
+table {
+    border-collapse: collapse;
+}

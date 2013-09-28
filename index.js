@@ -30,6 +30,8 @@ var tar = program.tar;
 
 var app = express();
 
+var meta = path.join(__dirname, "views");
+
 app.locals({
     version: version,
     platform: process.platform,
@@ -76,6 +78,14 @@ app.get('/', function (request, response) {
     response.redirect('/browse/');
 });
 
+/* app.get('/browse', function(request, response) {
+    response.redirect('/browse/');
+});
+
+app.get('/download', function(request, response) {
+    response.redirect('/download/');
+}); */
+
 app.get(/^\/browse\/(.*)/, function (request, response) {
     var pathname = path.resolve(root, request.params[0]);
     fs.stat(pathname, function (err, stats) {
@@ -113,6 +123,20 @@ app.get(/^\/download\/(.*)/, function(request, response) {
         }
     });
 });
+
+app.get(/^\/meta\/(.*)/, function(request, response) {
+    var pathname = path.resolve(meta, request.params[0]);
+    fs.stat(pathname, function(err, stats) {
+        if (err) {
+            error404(response);
+        } else if (stats.isDirectory()) {
+            genericError(response, httpError(403));
+        } else {
+            sendFile(pathname, response);
+        }
+    });
+});
+
 
 app.use(function (request, response) {
     error404(response);
@@ -278,7 +302,7 @@ function error404(response) {
 function httpError(code) {
     var err = new Error(http.STATUS_CODES[code]);
     err.status = code;
-    return code;
+    return err;
 }
 
 app.listen(port);
