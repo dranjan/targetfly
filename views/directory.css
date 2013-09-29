@@ -1,33 +1,16 @@
-.listing {
-    font-family: monospace;
+::selection {
+    color: #000;
+    background: #bf3;
+}
+
+::-moz-selection {
+    color: #000;
+    background: #bf3;
 }
 
 body {
     background-color: #181818;
     color: #d8d8d8;
-}
-
-.browse-link {
-    color: #fb3;
-    text-decoration: none;
-}
-
-[ft="dir"].browse-link:after {
-    color: #bf3;
-    content: "/";
-}
-
-.delimiter {
-    color: #73f;
-}
-
-.download-link {
-    color: #f37;
-    text-decoration: none;
-}
-
-[ft="dir"].download-link:after {
-    content: " TAR";
 }
 
 .header {
@@ -37,13 +20,73 @@ body {
     color: #d8d8d8;
 }
 
+.listing {
+    font-family: monospace;
+    border-collapse: collapse;
+}
+
+.listing th {
+    font-weight: normal;
+    color: #bf3;
+    text-align: left;
+}
+
+.listing td {
+    border-collapse: collapse;
+    border-width: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.listing .browse-link {
+    color: #fb3;
+    text-decoration: none;
+    padding-right: 5em;
+}
+
+.listing [ft="dir"].browse-link:after {
+    color: #b3f;
+    content: "/";
+}
+
+.listing .bracket {
+    color: #73f;
+}
+
+.listing [side="left"].bracket:after {
+    content: "[";
+}
+
+.listing [side="right"].bracket:after {
+    content: "]";
+}
+
+.listing .download-link {
+    color: #f37;
+    text-decoration: none;
+}
+
+.listing [ft="dir"].download-link:after {
+    content: "Download TAR";
+}
+
+.listing [ft="normal"].download-link:after {
+    content: "Download";
+}
+
+.listing td.size {
+    padding-right: 3em;
+    text-align: right;
+    color: #3bf;
+}
+
+.listing td.mtime {
+    text-align: right;
+}
+
 .footer {
     font-family: monospace;
     font-style: normal;
     font-size: 100%;
     color: #666;
-}
-
-table {
-    border-collapse: collapse;
 }

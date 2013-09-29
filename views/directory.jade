@@ -9,21 +9,38 @@ html
             = 'Directory listing for ' + path
         hr
         table(class="listing")
+            tr
+                th
+                th
+                th
+                th= 'Filename'
+                th= 'Size'
+                th= 'Modified'
+
             each file in files
-                if file.readable && file.stat
+                if file.readable && file.stats
+                    - var isDir = file.stats.isDirectory();
+                    - var ft = isDir? "dir":"normal";
                     tr
-                        td(class="delimiter") [
+                        td(class="bracket", side="left")
                         td
                             a(href='/download' + path + file.name,
-                              class="download-link",
-                              ft=(file.stat.isdir? "dir":"normal"))
-                                = 'Download'
-                        td(class="delimiter") ]
+                              class="download-link", ft=ft)
+
+                        td(class="bracket", side="right")
                         td
                             a(href='/browse' + path + file.name,
-                              class="browse-link",
-                              ft=(file.stat.isdir? "dir":"normal"))
-                                = file.name
+                              class="browse-link", ft=ft)
+                                  = file.name
+
+                        if isDir
+                            td(class="size", isDir="true")
+                        else
+                            td(class="size")
+                                = formatSize(file.stats.size)
+
+                        td(class="mtime")
+                            != formatDateFull(file.stats.mtime, date)
         hr
         p(class="footer")
             = 'targetfly server v' + version
