@@ -9,6 +9,9 @@ var http = require('http');
 var async = require('async');
 var mime = require('mime');
 
+var recursiveSize = require('./recursiveSize');
+
+
 var pkg = JSON.parse(fs.readFileSync(path.join(__dirname,
                                                "package.json")));
 var version = pkg.version;
@@ -211,15 +214,36 @@ app.get(/^\/meta\/(.*)/, function(request, response) {
 });
 
 
+app.get(/^\/measure\/(.*)/, function (request, response) {
+    var pathname = path.resolve(root, request.params[0]);
+    recursiveSize(pathname, function (dirname, filename) {
+        return !exclude_component(filename);
+    },
+
+    function (err, sz, nf, nd) {
+        if (err) {
+            error404(response);
+        } else {
+            response.status(200);
+            response.type('application/json');
+            response.end(JSON.stringify({
+                size : sz,
+                numFiles: nf,
+                numDirectories: nd
+            }));
+        }
+    });
+});
+
+
 app.use(function (request, response) {
     error404(response);
 });
 
 /* callback is callback(err, files), where files is an array whose
- * entries are {name:filename, stat:{isdir:<boolean>}}.  The 'stat'
- * field can be null (if stat-ing the file failed).  The array contains
- * an entry for each non-hidden file in the top level of the given
- * directory.
+ * entries are {name:filename, stat:stats}.  The 'stat' field can be
+ * null (if stat-ing the file failed).  The array contains an entry for
+ * each non-hidden file in the top level of the given directory.
  */
 function dirInfo(dirpath, callback) {
     function fileInfo(filename, callback) {
