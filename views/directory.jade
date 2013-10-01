@@ -5,10 +5,12 @@ html
         link(rel="stylesheet", type="text/css",
              href="/meta/directory.css")
     body
-        h2(class="header")
+        script(src="/meta/jquery-2.0.2.min.js")
+        script(src="/meta/getSize.js")
+        h2.header
             = 'Directory listing for ' + path
         hr
-        table(class="listing")
+        table.listing
             tr
                 th
                 th
@@ -22,27 +24,29 @@ html
                     - var isDir = file.stats.isDirectory();
                     - var ft = isDir? "dir":"normal";
                     tr
-                        td(class="bracket", side="left")
+                        td.bracket(side="left")
                         td
-                            a(href='/download' + path + file.name,
-                              class="download-link", ft=ft)
+                            a.download-link(href='/download' + path + file.name,
+                                            ft=ft)
 
-                        td(class="bracket", side="right")
+                        td.bracket(side="right")
                         td
-                            a(href='/browse' + path + file.name,
-                              class="browse-link", ft=ft)
+                            a.browse-link(href='/browse' + path + file.name,
+                                          ft=ft)
                                   = file.name
 
                         if isDir
-                            td(class="size", isDir="true")
+                            td.size(isDir="true", status="clickme",
+                                    pathname=(path + file.name))
+                                = "(click)"
                         else
-                            td(class="size")
+                            td.size(isDir="false")
                                 = formatSize(file.stats.size)
 
-                        td(class="mtime")
+                        td.mtime
                             != formatDateFull(file.stats.mtime, date)
         hr
-        p(class="footer")
+        p.footer
             = 'targetfly server v' + version
             = ', running on node.js '
             = node_version + '/' + platform + '/' + arch

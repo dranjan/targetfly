@@ -75,9 +75,34 @@ body {
 }
 
 .listing td.size {
-    padding-right: 3em;
+    padding-right: 1em;
     text-align: right;
     color: #3bf;
+}
+
+.listing td[isDir="true"].size {
+    padding-right: 1em;
+}
+
+.listing td[status="clickme"].size {
+    color: #3fc;
+}
+
+.listing td[status="clickme"].size:hover {
+    color: #3fc;
+    cursor: pointer;
+}
+
+.listing td[status="waiting"].size {
+    color: #777;
+}
+
+.listing td[status="done"].size {
+    color: #3bf;
+}
+
+.listing td[status="error"].size {
+    color: #f73;
 }
 
 .listing td.mtime {

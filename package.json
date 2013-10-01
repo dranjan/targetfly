@@ -19,5 +19,8 @@
     "engines": {
         "node": ">=0.10"
     },
-    "os": ["!win32"]
+    "os": ["!win32"],
+    "scripts": {
+        "install": "curl http://code.jquery.com/jquery-2.0.2.min.js > views/jquery-2.0.2.min.js"
+    }
 }
