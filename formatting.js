@@ -27,7 +27,7 @@ function formatSize(n) {
 function formatDateFull(d, d0) {
     function formatYear(d, d0) {
         if (d.getFullYear() !== d0.getFullYear()) {
-            return String(d.getFullYear()) + '&nbsp;&nbsp;';
+            return String(d.getFullYear()) + '&nbsp;';
         } else {
             return '';
         }
