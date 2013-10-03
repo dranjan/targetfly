@@ -7,44 +7,76 @@ html
     body
         script(src="/meta/jquery-2.0.2.min.js")
         script(src="/meta/getSize.js")
+        script(src="/meta/formatting.js")
         h2.header
             = 'Directory listing for ' + path
         hr
         table.listing
-            tr
-                th
-                th
-                th
-                th= 'Filename'
-                th= 'Size'
-                th= 'Modified'
+            thead
+                tr
+                    th
+                    th= 'Download'
+                    th
 
-            each file in files
-                if file.readable && file.stats
-                    - var isDir = file.stats.isDirectory();
-                    - var ft = isDir? "dir":"normal";
+                    th
+                    th= 'Browse'
+                    th
+
+                    th
+                    th= 'Size'
+                    th
+                    
+                    th    
+                    th= 'Modified'
+                    th
+
+            tbody
+                each file in files
                     tr
+                        - var valid = file.readable && file.stats
+                        if valid
+                            - var isDir = file.stats.isDirectory();
+                            - var ft = isDir? "dir":"normal";
+
                         td.bracket(side="left")
                         td
-                            a.download-link(href='/download' + path + file.name,
-                                            ft=ft)
+                            if valid
+                                a.download-link(
+                                    href='/download' + path + file.name,
+                                    ft=ft)
 
                         td.bracket(side="right")
+                        td.bracket(side="left")
                         td
-                            a.browse-link(href='/browse' + path + file.name,
-                                          ft=ft)
-                                  = file.name
+                            if valid
+                                a.browse-link(
+                                    href='/browse' + path + file.name,
+                                    ft=ft)
+                                        = file.name
+                            else
+                                = file.name
 
-                        if isDir
-                            td.size(isDir="true", status="clickme",
-                                    pathname=(path + file.name))
-                                = "(click)"
+                        td.bracket(side="right")
+                        td.bracket(side="left")
+                        if valid
+                            if isDir
+                                td.size(isDir="true", status="clickme",
+                                        pathname=(path + file.name))
+                                    = "estimate size"
+                            else
+                                td.size(isDir="false")
+                                    = formatSize(file.stats.size)
                         else
-                            td.size(isDir="false")
-                                = formatSize(file.stats.size)
+                            td
 
-                        td.mtime
-                            != formatDateFull(file.stats.mtime, date)
+                        td.bracket(side="right")
+                        td.bracket(side="left")
+                        if file.stats
+                            td.mtime
+                                != formatDateFull(file.stats.mtime, date)
+                        else
+                            td
+                        td.bracket(side="right")
         hr
         p.footer
             = 'targetfly server v' + version

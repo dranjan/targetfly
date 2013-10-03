@@ -11,6 +11,12 @@ function getSize(pathname, callback) {
     });
 }
 
+function formatGetSize(size, numFiles, numDirectories) {
+    return formatSize(size) + " (" + String(numFiles) +
+        ((numFiles == 1)? " file, " : " files, ") + String(numDirectories) +
+        ((numDirectories == 1)? " directory)" : " directories)");
+}
+
 $(document).ready(function () {
     $(".listing td[isDir='true'].size").click(function (event) {
         $(event.target).unbind("click");
@@ -22,9 +28,7 @@ $(document).ready(function () {
                 $(event.target).text("(error)");
             } else {
                 $(event.target).attr("status", "done");
-                $(event.target).text(String(sz) +
-                                     " (files: " + nf +
-                                     ", directories: " + nd + ")");
+                $(event.target).text(formatGetSize(sz, nf, nd));
             }
         });
     });
