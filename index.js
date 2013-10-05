@@ -61,10 +61,6 @@ if (show_hidden) {
     }
 }
 
-/* This middleware will refuse to serve any paths with a component
- * beginning with '.', which prohibits hidden files (and by implication,
- * upward directory traversal).
- */
 app.all('*', function (request, response, next) {
     var pathname = request.path;
     var components = pathname.split('/');
@@ -84,13 +80,13 @@ app.get('/', function (request, response) {
     response.redirect('/browse/');
 });
 
-/* app.get('/browse', function(request, response) {
+app.get(/^\/browse$/, function(request, response) {
     response.redirect('/browse/');
 });
 
-app.get('/download', function(request, response) {
+app.get(/^\/download$/, function(request, response) {
     response.redirect('/download/');
-}); */
+});
 
 app.get(/^\/browse\/(.*)/, function (request, response) {
     var pathname = path.resolve(root, request.params[0]);
@@ -174,7 +170,7 @@ app.use(function (request, response) {
 /* callback is callback(err, files), where files is an array whose
  * entries are {name:filename, stat:stats}.  The 'stat' field can be
  * null (if stat-ing the file failed).  The array contains an entry for
- * each non-hidden file in the top level of the given directory.
+ * each non-excluded file in the top level of the given directory.
  */
 function dirInfo(dirpath, callback) {
     function fileInfo(filename, callback) {
