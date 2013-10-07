@@ -34,7 +34,7 @@ var tar = program.tar;
 
 var app = express();
 
-var meta = path.join(__dirname, "views");
+var meta = path.join(__dirname, "meta");
 
 app.locals({
     version: version,
