@@ -23,13 +23,17 @@ program.option('-d, --directory [PATH]',
                'directory to serve [.]', '.');
 program.option('--show-hidden',
                'serve hidden files (affects TAR downloads as well)');
+program.option('--show-backup',
+               'serve backup files (#* and *~) ' +
+               '(affects TAR downloads as well)');
 program.option('--tar [PROGRAM]', 'choose \'tar\' binary', 'tar');
 
 program.parse(process.argv);
 
 var port = program.port;
 var root = program.directory;
-var show_hidden = program.showHidden;
+var showHidden = program.showHidden;
+var showBackup = program.showBackup;
 var tar = program.tar;
 
 var app = express();
@@ -51,14 +55,15 @@ app.set('views', __dirname + '/views');
 app.engine('.jade', jade.renderFile);
 app.set('view engine', 'jade');
 
-if (show_hidden) {
-    var exclude_component = function (f) {
-        return f === '.' || f === '..';
+
+function exclude_component(f) {
+    if (f === '.' || f === '..') return true;
+    if (!showHidden && (f[0] === '.')) return true;
+    if (!showBackup && (f[0] === '#' || f[f.length-1] === '~')) {
+        return true;
     }
-} else {
-    var exclude_component = function (f) {
-        return f[0] === '.';
-    }
+
+    return false;
 }
 
 app.all('*', function (request, response, next) {
@@ -261,9 +266,16 @@ function sendTar(dirpath, response) {
 
     var tar_opts = ["-c", "-C", cd];
 
-    if (!show_hidden) {
+    if (!showHidden) {
         tar_opts.push('--exclude');
         tar_opts.push('.*');
+    }
+
+    if (!showBackup) {
+        tar_opts.push('--exclude');
+        tar_opts.push('#*');
+        tar_opts.push('--exclude');
+        tar_opts.push('*~');
     }
 
     tar_opts.push(filename);
