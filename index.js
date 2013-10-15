@@ -38,7 +38,7 @@ var showBackup = program.showBackup;
 var tar = program.tar;
 
 var views = path.join(__dirname, 'views');
-var meta = path.join(__dirname, "meta");
+var static = path.join(__dirname, "static");
 
 function serve(port) {
     function onRequest(request, response) {
@@ -209,7 +209,7 @@ routes = {
         });
     },
 
-    'meta': function (pathname, response) {
+    'static': function (pathname, response) {
         var components = pathname.split('/');
         for (var i in components) {
             c = components[i];
@@ -220,7 +220,7 @@ routes = {
             }
         }
 
-        var truePath = path.resolve(meta, pathname);
+        var truePath = path.resolve(static, pathname);
 
         fs.stat(truePath, function(err, stats) {
             if (err) {

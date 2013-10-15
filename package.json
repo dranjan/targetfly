@@ -20,6 +20,6 @@
     },
     "os": ["!win32"],
     "scripts": {
-        "install": "curl http://code.jquery.com/jquery-2.0.2.min.js > views/jquery-2.0.2.min.js"
+        "install": "curl http://code.jquery.com/jquery-2.0.2.min.js > static/jquery-2.0.2.min.js"
     }
 }
