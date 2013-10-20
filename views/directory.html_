@@ -1,0 +1,89 @@
+<!doctype html><%
+var dl = function (type, name, text) {
+    %><a class="<%= type %>-link <%- ft %>" <%
+        %>href="/<%= type + path + file.name %>"><%- text %></a><%
+} %>
+<html>
+    <head>
+        <title>Directory listing for <%- path %></title>
+        <link rel="stylesheet" type="text/css" href="/static/directory.css"/>
+    </head>
+    <body>
+        <script src="/static/jquery-2.0.2.min.js"></script>
+        <script src="/static/getSize.js"></script>
+        <script src="/static/formatting.js"></script>
+
+        <h2 class="header">Directory listing for <%- path %></h2>
+        <hr/>
+
+        <table class="listing">
+            <thead>
+                <tr>
+                    <th></th>  <th>Download</th> <th></th>
+                    <th></th>  <th>Browse</th>   <th></th>
+                    <th></th>  <th>Size</th>     <th></th>
+                    <th></th>  <th>Modified</th> <th></th>
+                </tr>
+            </thead>
+            <tbody><% 
+            for (var k in files) {
+                var file = files[k];
+                var valid = file.readable && file.stats;
+                if (valid) {
+                    var isDir = file.stats.isDirectory();
+                    var ft = isDir? "dir" : "normal";
+                } %>
+                <tr>
+                    <td class="bracket left"> </td>
+                    <td><%
+                    if (valid) { %>
+                        <% dl("download", file.name, "");
+                    } %>
+                    </td>
+                    <td class="bracket right"> </td>
+                    <td class="bracket left"> </td><%
+                if (valid) { %>
+                    <td>
+                        <% dl("browse", file.name, file.name); %>
+                    </td><%
+                } else { %>
+                    <td><%- file.name %></td><%
+                } %>
+                    <td class="bracket right"> </td>
+                    <td class="bracket left"> </td><%
+                if (valid) {
+                    if (isDir) { %>
+                    <td class="size dir clickme">
+                        <span class="pathname"><%- path + file.name %></span>
+                        estimate size
+                    </td><%
+                    } else { %>
+                    <td class="size normal">
+                        <%- formatSize(file.stats.size) %>
+                    </td><%
+                    }
+                } else { %>
+                    <td> </td><%
+                } %>
+                    <td class="bracket right"> </td>
+                    <td class="bracket left"> </td><%
+                if (file.stats) { %>
+                    <td class="mtime">
+                        <%= formatDateFull(file.stats.mtime, date) %>
+                    </td><%
+                } else { %>
+                    <td> </td><%
+                } %>
+                    <td class="bracket right"> </td>
+                </tr><%
+            } %>
+            </tbody>
+        </table>
+
+        <hr/>
+        <p class="footer">
+        targetfly server v<%- version %>,
+        running on node.js <%- nodeVersion %>/<%- platform %>/<%- arch %>
+        </p>
+    </body>
+</html>

@@ -68,7 +68,7 @@ function formatDateFull(d, d0) {
            formatDate(d, d0) + formatTime(d, d0);
 }
 
-if (exports) {
+if (typeof exports !== "undefined") {
     exports.formatSize = formatSize;
     exports.formatDateFull = formatDateFull;
 }

@@ -18,17 +18,19 @@ function formatGetSize(size, numFiles, numDirectories) {
 }
 
 $(document).ready(function () {
-    $(".listing td[isDir='true'].size").click(function (event) {
-        $(event.target).unbind("click");
-        $(event.target).attr("status", "waiting");
-        $(event.target).text("(please wait...)");
-        getSize($(event.target).attr("pathname"), function (err, sz, nf, nd) {
+    $(".listing td.size.clickme").click(function (event) {
+        var target = $(event.target);
+        var pathname = target.children(".pathname").text();
+        target.unbind("click");
+        target.removeClass("clickme").addClass("waiting");
+        target.text("(please wait...)");
+        getSize(pathname, function (err, sz, nf, nd) {
             if (err) {
-                $(event.target).attr("status", "error");
-                $(event.target).text("(error)");
+                target.removeClass("waiting").addClass("error");
+                target.text("(error)");
             } else {
-                $(event.target).attr("status", "done");
-                $(event.target).text(formatGetSize(sz, nf, nd));
+                target.removeClass("waiting").addClass("done");
+                target.text(formatGetSize(sz, nf, nd));
             }
         });
     });

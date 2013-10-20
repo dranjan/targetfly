@@ -9,10 +9,10 @@
     ],
     "description": "a very simple web server that tars directories on the fly",
     "dependencies": {
-        "jade"     : "*",
-        "commander": "2.x",
-        "async"    : "*",
-        "mime"     : ">=1.0.0"
+        "underscore": "1.x",
+        "commander" : "2.x",
+        "async"     : "0.x",
+        "mime"      : "1.x"
     },
     "license": "GPL",
     "engines": {
@@ -21,5 +21,6 @@
     "os": ["!win32"],
     "scripts": {
         "install": "curl http://code.jquery.com/jquery-2.0.2.min.js > static/jquery-2.0.2.min.js"
-    }
+    },
+    "repository": "https://github.com/dranjan/targetfly"
 }

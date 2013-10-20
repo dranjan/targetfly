@@ -3,7 +3,7 @@ var url = require('url');
 
 var fs = require('fs');
 var spawn = require('child_process').spawn;
-var jade = require('jade');
+var _ = require('underscore');
 var program = require('commander');
 var inspect = require('util').inspect;
 var path = require('path');
@@ -37,8 +37,15 @@ var showHidden = program.showHidden;
 var showBackup = program.showBackup;
 var tar = program.tar;
 
-var views = path.join(__dirname, 'views');
 var static = path.join(__dirname, "static");
+
+views = {};
+
+_.each(['directory', 'error', '404'], function (viewname) {
+    viewpath = path.join(__dirname, 'views', viewname + '.html_');
+    views[viewname] = _.template(fs.readFileSync(viewpath,
+                                                 {encoding:'utf8'}));
+});
 
 function serve(port) {
     function onRequest(request, response) {
@@ -66,12 +73,12 @@ function serve(port) {
     console.log("Serving " + root + " on port " + String(port) + "...");
 }
 
-http.ServerResponse.prototype.render = function (view, locals) {
+http.ServerResponse.prototype.render = function (viewname, locals) {
     var renderLocals = {
         version: version,
         platform: process.platform,
         arch: process.arch,
-        node_version: process.version,
+        nodeVersion: process.version,
         formatSize: formatting.formatSize,
         formatDateFull: formatting.formatDateFull
     };
@@ -96,9 +103,9 @@ http.ServerResponse.prototype.render = function (view, locals) {
         }
     };
 
-    jade.renderFile(path.join(views, view + '.jade'),
-                    renderLocals,
-                    writeHtml);
+    async.waterfall([function (callback) {
+        callback(null, views[viewname](renderLocals));
+    }], writeHtml);
 };
 
 http.ServerResponse.prototype.redirect = function (location) {

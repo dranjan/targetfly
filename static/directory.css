@@ -27,18 +27,18 @@ body {
 }
 
 .browse-link:hover {
-    color: #fb7;
+    color: #fd7;
 }
 
-[ft="dir"].browse-link {
+.browse-link.dir {
     color: #f3b;
 }
 
-[ft="dir"].browse-link:hover {
+.browse-link.dir:hover {
     color: #f7b;
 }
 
-.listing [ft="dir"].browse-link:after {
+.listing .browse-link.dir:after {
     color: #b3f;
     content: "/";
 }
@@ -65,11 +65,11 @@ body {
     color: #73f;
 }
 
-.listing [side="left"].bracket:after {
+.listing .bracket.left:after {
     content: "[";
 }
 
-.listing [side="right"].bracket:after {
+.listing .bracket.right:after {
     content: "]";
 }
 
@@ -82,11 +82,11 @@ body {
     color: #f79;
 }
 
-.listing [ft="dir"].download-link:after {
+.listing .download-link.dir:after {
     content: "Download TAR";
 }
 
-.listing [ft="normal"].download-link:after {
+.listing .download-link.normal:after {
     content: "Download";
 }
 
@@ -96,28 +96,32 @@ body {
     color: #37f;
 }
 
-.listing td[isDir="true"].size {
+.listing td.size.dir{
     /* padding-right: 1em; */
 }
 
-.listing td[status="clickme"].size {
+.listing span.pathname {
+    display: none;
+}
+
+.listing td.size.clickme {
     color: #3bf;
 }
 
-.listing td[status="clickme"].size:hover {
+.listing td.size.clickme:hover {
     color: #7bf;
     cursor: pointer;
 }
 
-.listing td[status="waiting"].size {
+.listing td.size.waiting {
     color: #777;
 }
 
-.listing td[status="done"].size {
+.listing td.size.done {
     color: #37f;
 }
 
-.listing td[status="error"].size {
+.listing td.size.error {
     color: #f73;
 }
 

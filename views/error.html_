@@ -1,0 +1,14 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Error (<%- code %>)</title>
+    </head>
+    <body>
+        <h3>Error (code <%- code %>)</h3>
+        <p> Details:
+            <blockquote>
+                <pre><%- message %></pre>
+            </blockquote>
+        </p>
+    </body>
+</html>
