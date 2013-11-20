@@ -7,9 +7,6 @@ whole directories as TAR files that are generated on the fly.
 ## Installation
 
 Install node.js and npm, then run `npm install` in the repository root.
-You will also need some version of the `tar` command.  Both GNU tar and
-BSD tar are believed to work, but targetfly may break with extremely old
-versions of either.
 
 ## Usage
 
@@ -22,9 +19,8 @@ The most complicated usage is
 
     node path/to/targetfly/index.js --port [PORT] \
                                     --directory [DIRECTORY] \
-                                    --tar [PROGRAM] \
                                   [ --show-hidden ]
 
-which chooses an arbitrary port, root directory, and tar binary.  The
-last shown option, `--show-hidden`, will allow the server to serve files
-whose names begin with '.', which is disabled by default.
+which chooses an arbitrary port and root directory.  The last shown
+option, `--show-hidden`, will allow the server to serve files whose
+names begin with '.', which is disabled by default.

@@ -9,6 +9,8 @@ var inspect = require('util').inspect;
 var path = require('path');
 var async = require('async');
 var mime = require('mime');
+var fstream = require('fstream');
+var tar = require('tar');
 
 var recursiveSize = require('./recursiveSize');
 var formatting = require('./formatting');
@@ -27,7 +29,6 @@ program.option('--show-hidden',
 program.option('--show-backup',
                'serve backup files (#* and *~) ' +
                '(affects TAR downloads as well)');
-program.option('--tar [PROGRAM]', 'choose \'tar\' binary', 'tar');
 
 program.parse(process.argv);
 
@@ -35,7 +36,6 @@ var port = program.port;
 var root = program.directory;
 var showHidden = program.showHidden;
 var showBackup = program.showBackup;
-var tar = program.tar;
 
 var static = path.join(__dirname, "static");
 
@@ -49,8 +49,7 @@ _.each(['directory', 'error', '404'], function (viewname) {
 
 function serve(port) {
     function onRequest(request, response) {
-        console.log(request.connection.remoteAddress + ':' +
-                    request.connection.remotePort + " " +
+        console.log(request.connection.remoteAddress + " " +
                     request.method + " " + request.url);
 
         var requestUrl = url.parse(request.url);
@@ -146,7 +145,7 @@ function validatePath(pathname) {
     var components = pathname.split('/');
 
     for (var i in components) {
-        if (exclude_component(components[i])) {
+        if (excludeComponent(components[i])) {
             return false;
         }
     }
@@ -154,7 +153,7 @@ function validatePath(pathname) {
 }
 
 
-function exclude_component(f) {
+function excludeComponent(f) {
     if (f === '.' || f === '..') return true;
     if (!showHidden && (f[0] === '.')) return true;
     if (!showBackup && (f[0] === '#' || f[f.length-1] === '~')) {
@@ -248,7 +247,7 @@ routes = {
 
         var truePath = path.resolve(root, pathname);
         recursiveSize(truePath, function (dirname, filename) {
-            return !exclude_component(filename);
+            return !excludeComponent(filename);
         },
         function (err, sz, nf, nd) {
             if (err) {
@@ -304,7 +303,7 @@ function dirInfo(dirpath, callback) {
             callback(err);
         } else {
             async.filter(files, function (item, fn) {
-                fn(!exclude_component(item));
+                fn(!excludeComponent(item));
             },
             function (files) {
                 async.map(files, fileInfo, callback);
@@ -359,27 +358,16 @@ function sendTar(dirpath, response) {
     var filename = path.basename(dirpath);
     var tarname = filename + ".tar";
 
-    var tar_opts = ["-c", "-C", cd];
+    var reader = fstream.Reader({
+        path: dirpath,
+        type: 'Directory',
+        follow: true,
+        filter: function() {
+            return !excludeComponent(this.basename);
+        }
+    });
 
-    if (!showHidden) {
-        tar_opts.push('--exclude');
-        tar_opts.push('.*');
-    }
-
-    if (!showBackup) {
-        tar_opts.push('--exclude');
-        tar_opts.push('#*');
-        tar_opts.push('--exclude');
-        tar_opts.push('*~');
-    }
-
-    tar_opts.push(filename);
-
-    try {
-        var child = spawn(tar, tar_opts);
-    } catch (err) {
-        response.genericError(httpError(500));
-    }
+    var tarStream = tar.Pack();
 
     response.writeHead(200, {
         "Content-Type": "application/octet-stream",
@@ -394,12 +382,12 @@ function sendTar(dirpath, response) {
         }
     }
 
-    child.on('error', error);
+    reader.on('error', error);
 
     /* not sure if this is needed */
-    child.stdout.on('error', error);
+    tarStream.on('error', error);
 
-    child.stdout.pipe(response);
+    reader.pipe(tarStream).pipe(response);
 }
 
 serve(port);
