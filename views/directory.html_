@@ -19,10 +19,10 @@ var dl = function (type, name, text) {
         <table class="listing">
             <thead>
                 <tr>
-                    <th></th>  <th>Download</th> <th></th>
-                    <th></th>  <th>Browse</th>   <th></th>
-                    <th></th>  <th>Size</th>     <th></th>
-                    <th></th>  <th>Modified</th> <th></th>
+                    <th></th>  <th colspan="3">Download</th> <th></th>
+                    <th></th>  <th>Browse</th>               <th></th>
+                    <th></th>  <th>Size</th>                 <th></th>
+                    <th></th>  <th>Modified</th>             <th></th>
                 </tr>
             </thead>
             <tbody><% 
@@ -38,6 +38,12 @@ var dl = function (type, name, text) {
                     <td><%
                     if (valid) { %>
                         <% dl("download", file.name, "");
+                    } %>
+                    </td>
+                    <td class="bar"></td>
+                    <td><%
+                    if (valid) { %>
+                        <% dl("download-gzip", file.name, "");
                     } %>
                     </td>
                     <td class="bracket right"> </td>

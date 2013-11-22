@@ -11,6 +11,7 @@ var async = require('async');
 var mime = require('mime');
 var fstream = require('fstream');
 var tar = require('tar');
+var zlib = require('zlib');
 
 var recursiveSize = require('./recursiveSize');
 var formatting = require('./formatting');
@@ -215,6 +216,24 @@ routes = {
         });
     },
 
+    'download-gzip': function (pathname, response) {
+        if (!validatePath(pathname)) {
+            response.error404();
+            return;
+        }
+
+        var truePath = path.resolve(root, pathname);
+        fs.stat(truePath, function (err, stats) {
+            if (err) {
+                response.error404();
+            } else if (stats.isDirectory()) {
+                sendTgz(truePath, response);
+            } else {
+                sendGz(truePath, response);
+            }
+        });
+    },
+
     'static': function (pathname, response) {
         var components = pathname.split('/');
         for (var i in components) {
@@ -325,6 +344,33 @@ function fileReadable(filename, callback) {
     });
 }
 
+function sendGz(filepath, response) {
+    var filename = path.basename(filepath) + ".gz";
+
+    try {
+        var file = fs.createReadStream(filepath);
+    } catch (err) {
+        reponse.error404();
+    }
+
+    response.statusCode = 200;
+    response.setHeader('Content-Type', mime.lookup(filepath));
+
+    response.setHeader("Content-Disposition",
+                       "attachment; filename=" + filename);
+
+    file.on('error', function (err) {
+        if (!response.headerSent) {
+            response.removeHeader("Content-Type");
+            response.removeHeader("Content-Disposition");
+            response.genericError(httpError(500));
+        }
+    });
+
+    gzip = zlib.createGzip();
+    file.pipe(gzip).pipe(response);
+}
+
 function sendFile(filepath, response, attach) {
     var filename = path.basename(filepath);
 
@@ -353,21 +399,31 @@ function sendFile(filepath, response, attach) {
     file.pipe(response);
 }
 
-function sendTar(dirpath, response) {
-    var cd = path.dirname(dirpath);
+function sendTgz(dirpath, response) {
     var filename = path.basename(dirpath);
-    var tarname = filename + ".tar";
+    var tgzname = filename + ".tar.gz";
 
-    var reader = fstream.Reader({
-        path: dirpath,
-        type: 'Directory',
-        follow: true,
-        filter: function() {
-            return !excludeComponent(this.basename);
-        }
+    response.writeHead(200, {
+        "Content-Type": "application/octet-stream",
+        "Content-Disposition": "attachment; filename=" + tgzname
     });
 
-    var tarStream = tar.Pack();
+    function error(err) {
+        if (!response.headerSent) {
+            response.removeHeader("Content-Type");
+            response.removeHeader("Content-Disposition");
+            response.genericError(httpError(500));
+        }
+    }
+
+    var gzip = zlib.createGzip();
+
+    streamTar(dirpath, error).pipe(gzip).pipe(response);
+}
+
+function sendTar(dirpath, response) {
+    var filename = path.basename(dirpath);
+    var tarname = filename + ".tar";
 
     response.writeHead(200, {
         "Content-Type": "application/octet-stream",
@@ -382,12 +438,30 @@ function sendTar(dirpath, response) {
         }
     }
 
+    streamTar(dirpath, error).pipe(response);
+}
+
+/* `error' is a function to be called in the event of error. */
+function streamTar(dirpath, error) {
+    var reader = fstream.Reader({
+        path: dirpath,
+        type: 'Directory',
+        follow: true,
+        filter: function() {
+            return !excludeComponent(this.basename);
+        }
+    });
+
+    var tarStream = tar.Pack();
+
     reader.on('error', error);
 
     /* not sure if this is needed */
     tarStream.on('error', error);
 
-    reader.pipe(tarStream).pipe(response);
+    reader.pipe(tarStream);
+
+    return tarStream;
 }
 
 serve(port);

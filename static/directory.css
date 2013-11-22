@@ -73,6 +73,14 @@ body {
     content: "]";
 }
 
+.listing .bar {
+    color: #73f;
+}
+
+.listing .bar:after {
+    content: "|";
+}
+
 .listing .download-link {
     color: #f37;
     text-decoration: none;
@@ -82,12 +90,29 @@ body {
     color: #f79;
 }
 
+.listing .download-gzip-link {
+    color: #f37;
+    text-decoration: none;
+}
+
+.listing .download-gzip-link:hover {
+    color: #f79;
+}
+
 .listing .download-link.dir:after {
-    content: "Download TAR";
+    content: "tar ";
 }
 
 .listing .download-link.normal:after {
-    content: "Download";
+    content: "raw ";
+}
+
+.listing .download-gzip-link.dir:after {
+    content: "tar.gz";
+}
+
+.listing .download-gzip-link.normal:after {
+    content: "gz";
 }
 
 .listing td.size {

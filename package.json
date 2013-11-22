@@ -1,13 +1,13 @@
 {
     "name": "targetfly",
-    "version": "0.5",
+    "version": "0.6",
     "author": "Darsh P. Ranjan",
     "contributors": [
         {
             "name": "Darsh P. Ranjan"
         }
     ],
-    "description": "a very simple web server that tars directories on the fly",
+    "description": "simple web server",
     "dependencies": {
         "underscore": "1.x",
         "commander" : "2.x",
