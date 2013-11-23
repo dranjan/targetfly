@@ -1,17 +1,18 @@
 var http = require('http');
 var url = require('url');
-
 var fs = require('fs');
 var spawn = require('child_process').spawn;
-var _ = require('underscore');
-var program = require('commander');
 var inspect = require('util').inspect;
 var path = require('path');
-var async = require('async');
+var zlib = require('zlib');
+var domain = require('domain');
+
+var _ = require('underscore');
+var program = require('commander');
 var mime = require('mime');
+var async = require('async');
 var fstream = require('fstream');
 var tar = require('tar');
-var zlib = require('zlib');
 
 var recursiveSize = require('./recursiveSize');
 var formatting = require('./formatting');
@@ -56,13 +57,21 @@ function serve(port) {
         var requestUrl = url.parse(request.url);
         var pathname = requestUrl.pathname;
 
+        var dom = domain.create();
+        dom.on('error', function (err) {
+            console.log(inspect(err))
+            response.genericError(httpError(500));
+        });
+
         if (redirects[pathname]) {
             response.redirect(redirects[pathname]);
         } else {
             var components = pathname.split('/');
             var handler = routes[components[1]];
             if (handler) {
-                handler(components.slice(2).join('/'), response);
+                dom.run(function () {
+                    handler(components.slice(2).join('/'), response);
+                });
             } else {
                 response.error404();
             }
@@ -73,7 +82,10 @@ function serve(port) {
     console.log("Serving " + root + " on port " + String(port) + "...");
 }
 
-http.ServerResponse.prototype.render = function (viewname, locals) {
+http.ServerResponse.prototype.render = function (viewname, locals, code)
+{
+    if (!code) code = 200;
+
     var renderLocals = {
         version: version,
         platform: process.platform,
@@ -90,15 +102,13 @@ http.ServerResponse.prototype.render = function (viewname, locals) {
     var res = this;
     function writeHtml(err, html) {
         if (err) {
-            res.status = 500;
+            res.statusCode = 500;
             console.log(err);
             res.end();
         } else {
-            res.status = 200;
-            res.writeHead(200, {
-                'Content-Type': 'text/html',
-                'Content-Length': html.length
-            });
+            res.statusCode = code;
+            res.setHeader('Content-Type', 'text/html');
+            res.setHeader('Content-Length', html.length);
             res.end(html);
         }
     };
@@ -114,14 +124,26 @@ http.ServerResponse.prototype.redirect = function (location) {
 };
 
 http.ServerResponse.prototype.genericError = function (err) {
-    var errStr = inspect(err);
-    console.log(errStr);
-    var s = err.status || 500;
+    if (!this.headerSent) {
+        this.removeHeader('Content-Type');
+        this.removeHeader('Content-Disposition');
+        this.removeHeader('Content-Encoding');
+        this.removeHeader('Content-Length');
+    }
+
+    var errStr = "";
+    var s = 500;
+    if (err) {
+        errStr = inspect(err);
+        console.log(errStr);
+        s = err.status || 500;
+    } 
+
     if (s === 404) {
         this.error404();
     } else {
         this.statusCode = s;
-        this.render('error', {code:s, message:errStr});
+        this.render('error', {code:s, message:errStr}, s);
     }
 };
 
@@ -139,6 +161,8 @@ function httpError(code) {
 var redirects = {
     '/browse': '/browse/',
     '/download': '/download/',
+    '/download-gzip': '/download-gzip/',
+    '/measure': '/measure/',
     '/': '/browse/'
 };
 
@@ -354,17 +378,12 @@ function sendGz(filepath, response) {
     }
 
     response.statusCode = 200;
-    response.setHeader('Content-Type', mime.lookup(filepath));
-
+    response.setHeader('Content-Type', 'application/octet-stream');
     response.setHeader("Content-Disposition",
                        "attachment; filename=" + filename);
 
     file.on('error', function (err) {
-        if (!response.headerSent) {
-            response.removeHeader("Content-Type");
-            response.removeHeader("Content-Disposition");
-            response.genericError(httpError(500));
-        }
+        response.genericError(httpError(500));
     });
 
     gzip = zlib.createGzip();
@@ -389,11 +408,7 @@ function sendFile(filepath, response, attach) {
     }
 
     file.on('error', function (err) {
-        if (!response.headerSent) {
-            response.removeHeader("Content-Type");
-            response.removeHeader("Content-Disposition");
-            response.genericError(httpError(500));
-        }
+        response.genericError(httpError(500));
     });
 
     file.pipe(response);
@@ -403,17 +418,13 @@ function sendTgz(dirpath, response) {
     var filename = path.basename(dirpath);
     var tgzname = filename + ".tar.gz";
 
-    response.writeHead(200, {
-        "Content-Type": "application/octet-stream",
-        "Content-Disposition": "attachment; filename=" + tgzname
-    });
+    response.statusCode = 200;
+    response.setHeader("Content-Type", "application/octet-stream");
+    response.setHeader("Content-Disposition",
+                       "attachment; filename=" + tgzname);
 
     function error(err) {
-        if (!response.headerSent) {
-            response.removeHeader("Content-Type");
-            response.removeHeader("Content-Disposition");
-            response.genericError(httpError(500));
-        }
+        response.genericError(httpError(500));
     }
 
     var gzip = zlib.createGzip();
@@ -425,17 +436,13 @@ function sendTar(dirpath, response) {
     var filename = path.basename(dirpath);
     var tarname = filename + ".tar";
 
-    response.writeHead(200, {
-        "Content-Type": "application/octet-stream",
-        "Content-Disposition": "attachment; filename=" + tarname
-    });
+    response.statusCode = 200;
+    response.setHeader("Content-Type", "application/octet-stream");
+    response.setHeader("Content-Disposition",
+                       "attachment; filename=" + tarname);
 
     function error(err) {
-        if (!response.headerSent) {
-            response.removeHeader("Content-Type");
-            response.removeHeader("Content-Disposition");
-            response.genericError(httpError(500));
-        }
+        response.genericError(httpError(500));
     }
 
     streamTar(dirpath, error).pipe(response);
