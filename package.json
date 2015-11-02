@@ -16,7 +16,7 @@
         "fstream"   : "0.1.24",
         "tar"       : "0.1.18"
     },
-    "license": "GPL",
+    "license": "GPL-3.0",
     "engines": {
         "node": ">=0.10"
     },
